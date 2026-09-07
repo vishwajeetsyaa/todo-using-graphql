@@ -9,26 +9,29 @@ const app = express();
 require("dotenv").config();
 
 // 2. Enable CORS for Apollo Studio and allow credentials/headers
-app.use(
-  cors({
-    origin: ["https://apollographql.com", "http://localhost:4000"],
-    credentials: true,
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-  })
-);
-
-// 3. Explicitly handle OPTIONS preflight requests
-app.options("*", cors());
-
+// Replace your existing app.use("/graphql", ...) with this:
 app.use(
   "/graphql",
+  (req, res, next) => {
+    // Explicitly set CORS headers for Apollo Studio
+    res.setHeader("Access-Control-Allow-Origin", "https://studio.apollographql.com");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+    res.setHeader("Access-Control-Allow-Credentials", "true");
+
+    // Instantly respond to preflight OPTIONS requests
+    if (req.method === "OPTIONS") {
+      return res.sendStatus(200);
+    }
+    next();
+  },
   graphqlHTTP({
     schema: schema,
     rootValue: resolvers,
     graphiql: true,
   })
 );
+
 
 const PORT = process.env.PORT || 4000;
 
